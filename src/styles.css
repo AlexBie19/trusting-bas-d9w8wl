@@ -1,4 +1,249 @@
-.App {
-  font-family: sans-serif;
+:root {
+  --border: #d9dde5;
+  --bg: #f5f7fb;
+  --text: #1f2937;
+  --muted: #6b7280;
+  --selected: rgba(62, 128, 255, 0.22);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, "Segoe UI", sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.app-shell {
+  padding: 16px;
+}
+
+h1 {
+  margin: 0 0 12px;
+  font-size: 24px;
+}
+
+.toolbar,
+.filter-bar,
+.legend {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+button,
+select,
+input {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #fff;
+  padding: 6px 10px;
+}
+
+button {
+  cursor: pointer;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.planner-grid {
+  border: 1px solid var(--border);
+  background: #fff;
+  overflow: auto;
+}
+
+.planner-header,
+.planner-row {
+  display: grid;
+  grid-template-columns: 200px 240px 180px auto;
+  min-width: max-content;
+}
+
+.left-header,
+.left-cell {
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 8px;
+  font-size: 13px;
+}
+
+.left-header {
+  background: #eef2fb;
+  font-weight: 700;
+}
+
+.timeline-header,
+.timeline-row {
+  position: relative;
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+
+.day-header,
+.day-cell {
+  border-right: 1px solid var(--border);
   text-align: center;
+  font-size: 11px;
+  min-height: 42px;
+  padding-top: 2px;
+}
+
+.day-header.today {
+  background: #d9e8ff;
+}
+
+.weekend {
+  background: #f4f4f4;
+}
+
+.day-cell.selected {
+  background: var(--selected);
+}
+
+.task-bar {
+  position: absolute;
+  top: 8px;
+  height: 26px;
+  border-radius: 5px;
+  color: #111;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  cursor: grab;
+}
+
+.task-bar.dragging {
+  opacity: 0.75;
+}
+
+.task-bar.status-unscheduled {
+  border-style: dashed;
+}
+
+.unscheduled-pill {
+  position: absolute;
+  top: 8px;
+  left: 6px;
+  border: 1px dashed #666;
+  border-radius: 999px;
+  font-size: 11px;
+  color: #666;
+  padding: 4px 8px;
+  background: #fff;
+}
+
+.context-menu {
+  position: fixed;
+  z-index: 40;
+  background: #fff;
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.14);
+  border-radius: 8px;
+  min-width: 290px;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+}
+
+.context-menu button {
+  text-align: left;
+  border: 0;
+  background: transparent;
+}
+
+.context-menu button:hover {
+  background: #f4f7ff;
+}
+
+.edit-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 50;
+}
+
+.edit-drawer {
+  width: 640px;
+  max-width: 100%;
+  background: #fff;
+  padding: 16px;
+}
+
+.edit-grid {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.color-preview {
+  color: #fff;
+  border-radius: 6px;
+  padding: 8px;
+  font-weight: 600;
+}
+
+.drawer-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.print-view {
+  display: none;
+}
+
+.print-view table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.print-view th,
+.print-view td {
+  border: 1px solid #bbb;
+  padding: 6px;
+  font-size: 12px;
+}
+
+@media print {
+  .toolbar,
+  .filter-bar,
+  .legend,
+  .planner-grid,
+  .context-menu,
+  .edit-drawer-overlay,
+  h1 {
+    display: none !important;
+  }
+
+  .print-view {
+    display: block;
+  }
 }
