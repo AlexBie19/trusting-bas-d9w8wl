@@ -21,15 +21,19 @@ const statusRank: Record<string, number> = {
 
 export const sortEntries = (entries: PlannerEntry[]) => {
   return [...entries].sort((a, b) => {
-    const groupDiff = (typeRank[a.type] ?? 99) - (typeRank[b.type] ?? 99);
-    if (groupDiff !== 0) return groupDiff;
+    // First sort by tractorId to keep the same tractor's tasks together
+    const tractorDiff = a.tractorId.localeCompare(b.tractorId);
+    if (tractorDiff !== 0) return tractorDiff;
+
+    const statusDiff = (statusRank[a.status] ?? 99) - (statusRank[b.status] ?? 99);
+    if (statusDiff !== 0) return statusDiff;
 
     const aStart = a.startDate ?? "9999-12-31";
     const bStart = b.startDate ?? "9999-12-31";
     if (aStart !== bStart) return aStart.localeCompare(bStart);
 
-    const statusDiff = (statusRank[a.status] ?? 99) - (statusRank[b.status] ?? 99);
-    if (statusDiff !== 0) return statusDiff;
+    const groupDiff = (typeRank[a.type] ?? 99) - (typeRank[b.type] ?? 99);
+    if (groupDiff !== 0) return groupDiff;
 
     return a.title.localeCompare(b.title);
   });
@@ -93,4 +97,15 @@ export const moveEntryToStartDate = (entry: PlannerEntry, newStartDay: string): 
     endDate: toDayKey(end),
     status: entry.status === "unscheduled" ? "planned" : entry.status
   };
+};
+
+export const moveMultipleEntriesToStartDate = (
+  allEntries: PlannerEntry[],
+  entryIds: string[],
+  newStartDay: string
+): PlannerEntry[] => {
+  return allEntries.map((entry) => {
+    if (!entryIds.includes(entry.id)) return entry;
+    return moveEntryToStartDate(entry, newStartDay);
+  });
 };

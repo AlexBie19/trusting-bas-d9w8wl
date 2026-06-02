@@ -38,9 +38,9 @@ export const FilterBar = ({ filters, entries, tractors, onChange, onReset }: Fil
       </select>
 
       <select value={filters.tractorId} onChange={(event) => onChange({ ...filters, tractorId: event.target.value })}>
-        <option value="">Alle Schlepper</option>
+        <option value="">Alle Fahrzeuge</option>
         {tractors.map((tractor) => (
-          <option key={tractor.id} value={tractor.id}>{tractor.name}</option>
+          <option key={tractor.id} value={tractor.id}>{tractor.serialNumber} – {tractor.name}</option>
         ))}
       </select>
 

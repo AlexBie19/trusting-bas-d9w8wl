@@ -14,7 +14,9 @@ export const getVisibleRange = (baseDate = new Date()) => {
 };
 
 export const getVisibleDays = (baseDate = new Date()): Date[] => {
-  const { start, end } = getVisibleRange(baseDate);
+  const weekStart = startOfWeek(baseDate, { weekStartsOn: 1 });
+  const start = subWeeks(weekStart, 1);
+  const end = addDays(start, 55); // 56 days = 8 weeks for comfortable horizontal scrolling
   return eachDayOfInterval({ start, end });
 };
 
