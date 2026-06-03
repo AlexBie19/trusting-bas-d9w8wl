@@ -368,7 +368,7 @@ function App() {
           filename: "Planungsübersicht.pdf",
           margin: [8, 4],
           image: { type: "jpeg", quality: 0.95 },
-          html2canvas: { scale: 1.5, scrollX: 0, scrollY: 0, useCORS: true },
+          html2canvas: { scale: 1.5, scrollX: 0, scrollY: 0, useCORS: true, allowTaint: true, logging: false },
           jsPDF: { unit: "mm", format: "a3", orientation: "landscape" }
         })
         .from(gridEl)

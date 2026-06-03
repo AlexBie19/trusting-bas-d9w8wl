@@ -1,5 +1,6 @@
 import { format, isSameDay } from "date-fns";
 import { useRef, useState } from "react";
+import { typeBadgeColors } from "../data/fakeData";
 import { PlannerEntry, SelectionRange } from "../types";
 import { TaskBar } from "./TaskBar";
 
@@ -95,7 +96,9 @@ export const PlannerRow = ({
     <div className={`planner-row status-row-${entry.status}`}>
       {/* Task name + type badge */}
       <div className="left-cell col-task" title={`${entry.type}: ${entry.title}`}>
-        <span className="task-type-badge" data-type={entry.type}>{entry.type}</span>
+        <span className="task-type-badge" data-type={entry.type} style={typeBadgeColors[entry.type] ?? {}}>
+          {entry.type}
+        </span>
         <span className="task-title">{entry.title}</span>
       </div>
 
