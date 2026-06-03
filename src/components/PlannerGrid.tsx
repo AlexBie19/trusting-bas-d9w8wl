@@ -144,10 +144,11 @@ export const PlannerGrid = ({
               <div className="group-timeline" style={{ width: days.length * cellWidth }}>
                 {days.map((day) => {
                   const weekend = day.getDay() === 0 || day.getDay() === 6;
+                  const isToday = isSameDay(day, today);
                   return (
                     <div
                       key={day.toISOString()}
-                      className={`day-cell group-day-cell ${weekend ? "weekend" : ""}`}
+                      className={`day-cell group-day-cell ${weekend ? "weekend" : ""} ${isToday ? "today" : ""}`}
                       style={{ width: cellWidth }}
                     />
                   );

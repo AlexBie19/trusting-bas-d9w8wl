@@ -6,6 +6,7 @@
   "main": "src/index.tsx",
   "dependencies": {
     "date-fns": "^3.0.0",
+    "html2pdf.js": "^0.14.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-scripts": "^5.0.0"
