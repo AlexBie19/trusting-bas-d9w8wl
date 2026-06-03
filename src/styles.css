@@ -349,6 +349,19 @@ button {
   border-left: 2px solid #4a90e2;
 }
 
+.day-cell.today {
+  background: #edf4ff;
+  border-left: 2px solid #4a90e2;
+}
+
+.day-cell.today.weekend {
+  background: #e4edf9;
+}
+
+.day-cell.today.selected {
+  background: #c8d9f5;
+}
+
 .weekend {
   background: #f4f4f4;
 }
@@ -556,14 +569,30 @@ button {
   .toolbar,
   .filter-bar,
   .legend,
-  .planner-grid,
   .context-menu,
   .edit-drawer-overlay,
   h1 {
     display: none !important;
   }
 
+  .collapse-btn,
+  .task-bar-resize-handle {
+    display: none !important;
+  }
+
+  .planner-grid {
+    overflow: visible !important;
+    border: none;
+    page-break-inside: avoid;
+  }
+
+  .app-shell {
+    padding: 0;
+  }
+
   .print-view {
     display: block;
+    margin-top: 24px;
+    page-break-before: always;
   }
 }

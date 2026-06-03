@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { useRef, useState } from "react";
 import { PlannerEntry, SelectionRange } from "../types";
 import { TaskBar } from "./TaskBar";
@@ -157,11 +157,12 @@ export const PlannerRow = ({
         {days.map((day, dayIndex) => {
           const weekend = day.getDay() === 0 || day.getDay() === 6;
           const selected = isSelectedCell(selection, rowIndex, dayIndex);
+          const isToday = isSameDay(day, new Date());
 
           return (
             <div
               key={`${rowIndex}-${dayIndex}`}
-              className={`day-cell ${weekend ? "weekend" : ""} ${selected ? "selected" : ""}`}
+              className={`day-cell ${weekend ? "weekend" : ""} ${selected ? "selected" : ""} ${isToday ? "today" : ""}`}
               style={{ width: cellWidth }}
               onMouseDown={() => onCellMouseDown(rowIndex, dayIndex)}
               onMouseEnter={() => onCellMouseEnter(rowIndex, dayIndex)}

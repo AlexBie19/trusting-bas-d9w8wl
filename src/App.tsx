@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { addWeeks } from "date-fns";
+import html2pdf from "html2pdf.js";
 import { ContextMenu, ContextAction } from "./components/ContextMenu";
 import { EditDrawer } from "./components/EditDrawer";
 import { FilterBar } from "./components/FilterBar";
@@ -352,12 +353,29 @@ function App() {
     return createActions;
   }, [contextMenu, allEntries, visibleEntries, selectedStartDay, selection, days, selectedEntryIds, selectedTractorIds, tractors]);
 
-  const handleSendMail = () => {
+  const handleSendMail = async () => {
     const lines = visibleEntries.map((entry) => {
       const range = `${entry.startDate ?? "-"} bis ${entry.endDate ?? "-"}`;
       return `${entry.type}: ${entry.title} | ${entry.owner} | ${range} | ${entry.status}`;
     });
     const body = encodeURIComponent(`Aktuelle Planungsübersicht\n\n${lines.join("\n")}`);
+
+    // Generate PDF from the planner grid and download it
+    const gridEl = gridRef.current;
+    if (gridEl) {
+      await html2pdf()
+        .set({
+          filename: "Planungsübersicht.pdf",
+          margin: [8, 4],
+          image: { type: "jpeg", quality: 0.95 },
+          html2canvas: { scale: 1.5, scrollX: 0, scrollY: 0, useCORS: true },
+          jsPDF: { unit: "mm", format: "a3", orientation: "landscape" }
+        })
+        .from(gridEl)
+        .save();
+      alert("PDF wurde heruntergeladen. Bitte als Anhang zur E-Mail hinzufügen.");
+    }
+
     window.location.href = `mailto:?subject=Planungsübersicht&body=${body}`;
   };
 
