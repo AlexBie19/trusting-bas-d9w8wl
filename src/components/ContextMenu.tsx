@@ -1,8 +1,9 @@
 import { useEffect, useRef } from "react";
 
-interface ContextAction {
+export interface ContextAction {
   key: string;
   label: string;
+  separator?: boolean;
   onClick: () => void;
 }
 
@@ -29,18 +30,22 @@ export const ContextMenu = ({ x, y, actions, onClose }: ContextMenuProps) => {
 
   return (
     <div className="context-menu" style={{ left: x, top: y }} ref={ref}>
-      {actions.map((action) => (
-        <button
-          key={action.key}
-          type="button"
-          onClick={() => {
-            action.onClick();
-            onClose();
-          }}
-        >
-          {action.label}
-        </button>
-      ))}
+      {actions.map((action) =>
+        action.separator ? (
+          <div key={action.key} className="context-menu-separator" role="separator" />
+        ) : (
+          <button
+            key={action.key}
+            type="button"
+            onClick={() => {
+              action.onClick();
+              onClose();
+            }}
+          >
+            {action.label}
+          </button>
+        )
+      )}
     </div>
   );
 };

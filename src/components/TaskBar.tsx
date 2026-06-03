@@ -19,6 +19,8 @@ export const TaskBar = ({ entry, gridStart, cellWidth, onMove, onContextMenu, on
   const [editingDesc, setEditingDesc] = useState(false);
   const [descDraft, setDescDraft] = useState(entry.description);
   const dragOffsetRef = useRef(0);
+  const startXRef = useRef(0);
+  const startYRef = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const cancelledRef = useRef(false);
 
@@ -66,6 +68,8 @@ export const TaskBar = ({ entry, gridStart, cellWidth, onMove, onContextMenu, on
     event.preventDefault();
     event.stopPropagation();
     const startX = event.clientX;
+    startXRef.current = event.clientX;
+    startYRef.current = event.clientY;
     setDragging(true);
 
     const onMouseMove = (moveEvent: MouseEvent) => {
@@ -78,7 +82,12 @@ export const TaskBar = ({ entry, gridStart, cellWidth, onMove, onContextMenu, on
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
       const dayDelta = Math.round(dragOffsetRef.current / cellWidth);
-      onMove(entry.id, dayDelta, upEvent.clientY);
+      const xMoved = Math.abs(upEvent.clientX - startXRef.current);
+      const yMoved = Math.abs(upEvent.clientY - startYRef.current);
+      // Only treat as a drag if the pointer moved enough to be intentional
+      if (xMoved > 4 || yMoved > 8) {
+        onMove(entry.id, dayDelta, upEvent.clientY);
+      }
       dragOffsetRef.current = 0;
       setDragOffset(0);
       setDragging(false);

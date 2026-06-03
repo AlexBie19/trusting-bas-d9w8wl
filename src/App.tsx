@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { addWeeks } from "date-fns";
-import { ContextMenu } from "./components/ContextMenu";
+import { ContextMenu, ContextAction } from "./components/ContextMenu";
 import { EditDrawer } from "./components/EditDrawer";
 import { FilterBar } from "./components/FilterBar";
 import { Legend } from "./components/Legend";
@@ -236,7 +236,7 @@ function App() {
       const entry = allEntries.find((item) => item.id === targetEntryId);
       if (!entry) return [];
 
-      const actions = [
+      const actions: ContextAction[] = [
         {
           key: "edit",
           label: "✏️ Aktion bearbeiten",
@@ -291,7 +291,7 @@ function App() {
       // If there's an active date selection, offer "create from selection" options too
       if (selectedStartDay) {
         actions.push(
-          { key: "sep", label: "──────────────────────────────", onClick: () => {} },
+          { key: "sep", label: "", separator: true, onClick: () => {} },
           { key: "fromSelAction", label: "📐 Neue Aktion aus markiertem Bereich", onClick: () => openCreateDialog("Umbau", true, entry.tractorId, selectedTractorIds) },
           { key: "fromSelEvent",  label: "📐 Neues Event aus markiertem Bereich",  onClick: () => openCreateDialog("Event", true, entry.tractorId, selectedTractorIds) },
           { key: "fromSelTest",   label: "📐 Neuen Test aus markiertem Bereich",   onClick: () => openCreateDialog("Test",  true, entry.tractorId, selectedTractorIds) }
@@ -438,7 +438,7 @@ function App() {
             const movedEntry = dayDelta !== 0 ? moveEntryByDays(originalEntry, dayDelta) : originalEntry;
             const copiedEntry: PlannerEntry = {
               ...movedEntry,
-              id: `copy-${Date.now()}`,
+              id: `copy-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
               tractorId: targetTractorId
             };
             setAllEntries((current) => [...current, copiedEntry]);
