@@ -15,6 +15,7 @@ import {
   moveEntryByDays,
   moveEntryToStartDate,
   moveMultipleEntriesToStartDate,
+  moveMultipleEntriesToUnscheduled,
   sortEntries
 } from "./utils/planner";
 import "./styles.css";
@@ -23,7 +24,8 @@ const defaultFilters: PlannerFilters = {
   type: "",
   owner: "",
   status: "",
-  tractorId: ""
+  tractorId: "",
+  search: ""
 };
 
 const zoomWidths: Record<ZoomLevel, number> = {
@@ -46,12 +48,14 @@ function App() {
   const [filters, setFilters] = useState<PlannerFilters>(defaultFilters);
   const [zoom, setZoom] = useState<ZoomLevel>("standard");
   const [showHistory, setShowHistory] = useState(false);
+  const [collapsedTractorIds, setCollapsedTractorIds] = useState<string[]>([]);
   const [weekOffset, setWeekOffset] = useState(0);
   const [selection, setSelection] = useState<SelectionRange | null>(null);
   const [dragStart, setDragStart] = useState<{ row: number; day: number } | null>(null);
   const [isSelecting, setIsSelecting] = useState(false);
   const [contextMenu, setContextMenu] = useState<ContextState | null>(null);
   const [editingEntry, setEditingEntry] = useState<PlannerEntry | null>(null);
+  const [pendingCreateTractorIds, setPendingCreateTractorIds] = useState<string[] | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const gridRef = useRef<HTMLDivElement>(null);
@@ -63,9 +67,37 @@ function App() {
   const cellWidth = zoomWidths[zoom];
 
   const visibleEntries = useMemo(() => {
-    const filtered = filterEntries(allEntries, filters, showHistory, new Date());
+    const filtered = filterEntries(
+      allEntries,
+      filters,
+      showHistory,
+      days[0],
+      days[days.length - 1],
+      new Date()
+    );
     return sortEntries(filtered);
-  }, [allEntries, filters, showHistory]);
+  }, [allEntries, filters, showHistory, days]);
+
+  const visibleGroups = useMemo(
+    () =>
+      tractors
+        .map((tractor) => ({
+          tractor,
+          entries: visibleEntries.filter((entry) => entry.tractorId === tractor.id)
+        }))
+        .filter((group) => group.entries.length > 0),
+    [visibleEntries, tractors]
+  );
+
+  const visibleRowEntries = useMemo(() => {
+    const rows: Array<{ entry: PlannerEntry; rowIndex: number }> = [];
+    let idx = 0;
+    visibleGroups.forEach(({ tractor, entries }) => {
+      if (collapsedTractorIds.includes(tractor.id)) return;
+      entries.forEach((entry) => rows.push({ entry, rowIndex: idx++ }));
+    });
+    return rows;
+  }, [visibleGroups, collapsedTractorIds]);
 
   const updateEntry = (updated: PlannerEntry) => {
     setAllEntries((current) => {
@@ -136,13 +168,21 @@ function App() {
     return () => el.removeEventListener("wheel", handleWheel);
   }, [gridRef.current]);
 
-  const openCreateDialog = (type: PlannerEntry["type"], withSelection = false, tractorId?: string) => {
+  const openCreateDialog = (
+    type: PlannerEntry["type"],
+    withSelection = false,
+    tractorId?: string,
+    selectedTractors: string[] = []
+  ) => {
     const startDate = withSelection && selectedStartDay ? selectedStartDay : null;
     const endDate = withSelection && selection ? toDayKey(days[selection.dayEnd]) : startDate;
+    const targets = selectedTractors.length > 0
+      ? selectedTractors
+      : [tractorId ?? tractors[0].id];
 
     const blank: PlannerEntry = {
       id: `new-${Date.now()}`,
-      tractorId: tractorId ?? tractors[0].id,
+      tractorId: targets[0],
       type,
       title: `${type} neu`,
       description: "",
@@ -152,6 +192,7 @@ function App() {
       status: startDate ? "planned" : "unscheduled"
     };
 
+    setPendingCreateTractorIds(withSelection ? targets : null);
     setEditingEntry(blank);
     setDrawerOpen(true);
   };
@@ -159,26 +200,21 @@ function App() {
   // Collect all selected entry ids (entries whose rows fall in the selection)
   const selectedEntryIds = useMemo(() => {
     if (!selection) return [];
-    // Build sorted visible entries same as in PlannerGrid
-    const groups = tractors
-      .map((tractor) => ({
-        tractor,
-        entries: visibleEntries.filter((e) => e.tractorId === tractor.id)
-      }))
-      .filter((g) => g.entries.length > 0);
-
-    const rowMap: Array<{ entry: PlannerEntry; rowIndex: number }> = [];
-    let idx = 0;
-    groups.forEach(({ entries }) => {
-      entries.forEach((entry) => {
-        rowMap.push({ entry, rowIndex: idx++ });
-      });
-    });
-
-    return rowMap
+    return visibleRowEntries
       .filter(({ rowIndex }) => rowIndex >= selection.rowStart && rowIndex <= selection.rowEnd)
       .map(({ entry }) => entry.id);
-  }, [selection, visibleEntries]);
+  }, [selection, visibleRowEntries]);
+
+  const selectedTractorIds = useMemo(() => {
+    if (!selection) return [];
+    return Array.from(
+      new Set(
+        visibleRowEntries
+          .filter(({ rowIndex }) => rowIndex >= selection.rowStart && rowIndex <= selection.rowEnd)
+          .map(({ entry }) => entry.tractorId)
+      )
+    );
+  }, [selection, visibleRowEntries]);
 
   const contextActions = useMemo(() => {
     if (!contextMenu) return [];
@@ -230,6 +266,16 @@ function App() {
         });
       }
 
+      if (selectedEntryIds.length > 1) {
+        actions.push({
+          key: "unscheduledBulk",
+          label: `📦 ${selectedEntryIds.length} markierte Tasks auf unbestimmte Zeit verschieben`,
+          onClick: () => {
+            setAllEntries((current) => moveMultipleEntriesToUnscheduled(current, selectedEntryIds));
+          }
+        });
+      }
+
       return actions;
     }
 
@@ -254,9 +300,9 @@ function App() {
       { key: "createAction",    label: "➕ Aktion erstellen",                              onClick: () => openCreateDialog("Umbau", false, tractorId) },
       { key: "createEvent",     label: "➕ Event erstellen",                               onClick: () => openCreateDialog("Event", false, tractorId) },
       { key: "createTest",      label: "➕ Test erstellen",                                onClick: () => openCreateDialog("Test", false, tractorId) },
-      { key: "fromSelAction",   label: "📐 Neue Aktion aus markiertem Bereich",            onClick: () => openCreateDialog("Umbau", true, tractorId) },
-      { key: "fromSelEvent",    label: "📐 Neues Event aus markiertem Bereich",            onClick: () => openCreateDialog("Event", true, tractorId) },
-      { key: "fromSelTest",     label: "📐 Neuen Test aus markiertem Bereich",             onClick: () => openCreateDialog("Test", true, tractorId) }
+      { key: "fromSelAction",   label: "📐 Neue Aktion aus markiertem Bereich",            onClick: () => openCreateDialog("Umbau", true, tractorId, selectedTractorIds) },
+      { key: "fromSelEvent",    label: "📐 Neues Event aus markiertem Bereich",            onClick: () => openCreateDialog("Event", true, tractorId, selectedTractorIds) },
+      { key: "fromSelTest",     label: "📐 Neuen Test aus markiertem Bereich",             onClick: () => openCreateDialog("Test", true, tractorId, selectedTractorIds) }
     ];
 
     // If multiple rows selected offer bulk move too
@@ -270,8 +316,18 @@ function App() {
       });
     }
 
+    if (selectedEntryIds.length > 1) {
+      createActions.push({
+        key: "unscheduledBulk",
+        label: `📦 ${selectedEntryIds.length} markierte Tasks auf unbestimmte Zeit verschieben`,
+        onClick: () => {
+          setAllEntries((current) => moveMultipleEntriesToUnscheduled(current, selectedEntryIds));
+        }
+      });
+    }
+
     return createActions;
-  }, [contextMenu, allEntries, visibleEntries, selectedStartDay, selection, days, selectedEntryIds, tractors]);
+  }, [contextMenu, allEntries, visibleEntries, selectedStartDay, selection, days, selectedEntryIds, selectedTractorIds, tractors]);
 
   const handleSendMail = () => {
     const lines = visibleEntries.map((entry) => {
@@ -315,6 +371,15 @@ function App() {
         cellWidth={cellWidth}
         selection={selection}
         isSelecting={isSelecting}
+        collapsedTractorIds={collapsedTractorIds}
+        onToggleTractor={(tractorId) => {
+          setCollapsedTractorIds((current) =>
+            current.includes(tractorId)
+              ? current.filter((id) => id !== tractorId)
+              : [...current, tractorId]
+          );
+          setSelection(null);
+        }}
         gridRef={gridRef}
         onCellMouseDown={(row, day) => {
           setDragStart({ row, day });
@@ -372,11 +437,25 @@ function App() {
         tractors={tractors}
         entry={editingEntry}
         onCancel={() => {
+          setPendingCreateTractorIds(null);
           setDrawerOpen(false);
           setEditingEntry(null);
         }}
         onSave={(entry) => {
-          updateEntry(entry);
+          if (pendingCreateTractorIds && pendingCreateTractorIds.length > 0) {
+            const base = Date.now();
+            setAllEntries((current) => [
+              ...current,
+              ...pendingCreateTractorIds.map((tractorId, index) => ({
+                ...entry,
+                id: `${entry.id}-${base}-${index}`,
+                tractorId
+              }))
+            ]);
+          } else {
+            updateEntry(entry);
+          }
+          setPendingCreateTractorIds(null);
           setDrawerOpen(false);
           setEditingEntry(null);
         }}

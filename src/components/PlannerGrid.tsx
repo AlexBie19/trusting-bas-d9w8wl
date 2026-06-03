@@ -9,6 +9,8 @@ interface PlannerGridProps {
   cellWidth: number;
   selection: SelectionRange | null;
   isSelecting: boolean;
+  collapsedTractorIds: string[];
+  onToggleTractor: (tractorId: string) => void;
   onCellMouseDown: (row: number, day: number) => void;
   onCellMouseEnter: (row: number, day: number) => void;
   onCellMouseUp: () => void;
@@ -26,6 +28,8 @@ export const PlannerGrid = ({
   cellWidth,
   selection,
   isSelecting,
+  collapsedTractorIds,
+  onToggleTractor,
   onCellMouseDown,
   onCellMouseEnter,
   onCellMouseUp,
@@ -35,8 +39,8 @@ export const PlannerGrid = ({
   onDescriptionEdit,
   gridRef
 }: PlannerGridProps) => {
-  const tractorMap = new Map(tractors.map((tractor) => [tractor.id, tractor]));
   const today = new Date();
+  const collapsedSet = new Set(collapsedTractorIds);
 
   // Group entries by tractorId, maintaining the tractor order from the tractors array
   const groups = tractors
@@ -48,10 +52,11 @@ export const PlannerGrid = ({
 
   // Build a flat row index map (only task rows count for selection)
   let rowCounter = 0;
-  const rowMap: Array<{ entry: PlannerEntry; rowIndex: number }> = [];
-  groups.forEach(({ entries: groupEntries }) => {
+  const rowIndexByEntryId = new Map<string, number>();
+  groups.forEach(({ tractor, entries: groupEntries }) => {
+    if (collapsedSet.has(tractor.id)) return;
     groupEntries.forEach((entry) => {
-      rowMap.push({ entry, rowIndex: rowCounter });
+      rowIndexByEntryId.set(entry.id, rowCounter);
       rowCounter++;
     });
   });
@@ -89,9 +94,18 @@ export const PlannerGrid = ({
             {/* Group header: Seriennummer + Schlepper name */}
             <div className="planner-group-header">
               <div className="group-left">
+                <button
+                  type="button"
+                  className="collapse-btn"
+                  onClick={() => onToggleTractor(tractor.id)}
+                  aria-label={collapsedSet.has(tractor.id) ? "Schlepper ausklappen" : "Schlepper einklappen"}
+                >
+                  {collapsedSet.has(tractor.id) ? "▶" : "▼"}
+                </button>
                 <span className="group-serial">{tractor.serialNumber}</span>
                 <span className="group-separator"> · </span>
                 <span className="group-tractor">{tractor.name}</span>
+                <span className="group-count">({groupEntries.length})</span>
               </div>
               <div className="group-timeline" style={{ width: days.length * cellWidth }}>
                 {days.map((day) => {
@@ -108,27 +122,27 @@ export const PlannerGrid = ({
             </div>
 
             {/* Task rows */}
-            {groupEntries.map((entry) => {
-              const rowData = rowMap.find((r) => r.entry.id === entry.id);
-              const rowIndex = rowData?.rowIndex ?? 0;
-              return (
-                <PlannerRow
-                  key={entry.id}
-                  rowIndex={rowIndex}
-                  entry={entry}
-                  days={days}
-                  cellWidth={cellWidth}
-                  selection={selection}
-                  onCellMouseDown={onCellMouseDown}
-                  onCellMouseEnter={onCellMouseEnter}
-                  onCellMouseUp={onCellMouseUp}
-                  onCellContextMenu={onCellContextMenu}
-                  onTaskMove={onTaskMove}
-                  onTaskContextMenu={onTaskContextMenu}
-                  onDescriptionEdit={onDescriptionEdit}
-                />
-              );
-            })}
+            {!collapsedSet.has(tractor.id) &&
+              groupEntries.map((entry) => {
+                const rowIndex = rowIndexByEntryId.get(entry.id) ?? 0;
+                return (
+                  <PlannerRow
+                    key={entry.id}
+                    rowIndex={rowIndex}
+                    entry={entry}
+                    days={days}
+                    cellWidth={cellWidth}
+                    selection={selection}
+                    onCellMouseDown={onCellMouseDown}
+                    onCellMouseEnter={onCellMouseEnter}
+                    onCellMouseUp={onCellMouseUp}
+                    onCellContextMenu={onCellContextMenu}
+                    onTaskMove={onTaskMove}
+                    onTaskContextMenu={onTaskContextMenu}
+                    onDescriptionEdit={onDescriptionEdit}
+                  />
+                );
+              })}
           </div>
         ))}
       </div>

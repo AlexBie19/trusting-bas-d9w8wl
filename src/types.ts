@@ -34,6 +34,7 @@ export interface PlannerFilters {
   owner: string;
   status: string;
   tractorId: string;
+  search: string;
 }
 
 export interface SelectionRange {
