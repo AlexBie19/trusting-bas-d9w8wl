@@ -4,6 +4,9 @@ import { typeColors } from "../data/fakeData";
 import { PlannerEntry } from "../types";
 import { fromDayKey } from "../utils/dates";
 
+const MIN_DRAG_THRESHOLD_X = 4;
+const MIN_DRAG_THRESHOLD_Y = 8;
+
 interface TaskBarProps {
   entry: PlannerEntry;
   gridStart: Date;
@@ -89,7 +92,7 @@ export const TaskBar = ({ entry, gridStart, cellWidth, onMove, onResizeEnd, onCo
       const xMoved = Math.abs(upEvent.clientX - startXRef.current);
       const yMoved = Math.abs(upEvent.clientY - startYRef.current);
       // Only treat as a drag if the pointer moved enough to be intentional
-      if (xMoved > 4 || yMoved > 8) {
+      if (xMoved > MIN_DRAG_THRESHOLD_X || yMoved > MIN_DRAG_THRESHOLD_Y) {
         onMove(entry.id, dayDelta, upEvent.clientY);
       }
       dragOffsetRef.current = 0;
