@@ -17,6 +17,7 @@ interface PlannerGridProps {
   onCellMouseUp: () => void;
   onCellContextMenu: (event: React.MouseEvent<HTMLDivElement>, row: number, day: number, entryId?: string) => void;
   onTaskMove: (entryId: string, dayDelta: number, finalClientY: number) => void;
+  onTaskResizeEnd: (entryId: string, dayDelta: number) => void;
   onTaskContextMenu: (event: React.MouseEvent<HTMLDivElement>, entryId: string) => void;
   onDescriptionEdit: (entryId: string, newDescription: string) => void;
   onOwnerEdit: (entryId: string, newOwner: string) => void;
@@ -38,6 +39,7 @@ export const PlannerGrid = ({
   onCellMouseUp,
   onCellContextMenu,
   onTaskMove,
+  onTaskResizeEnd,
   onTaskContextMenu,
   onDescriptionEdit,
   onOwnerEdit,
@@ -171,6 +173,7 @@ export const PlannerGrid = ({
                     onCellMouseUp={onCellMouseUp}
                     onCellContextMenu={onCellContextMenu}
                     onTaskMove={onTaskMove}
+                    onTaskResizeEnd={onTaskResizeEnd}
                     onTaskContextMenu={onTaskContextMenu}
                     onDescriptionEdit={onDescriptionEdit}
                     onOwnerEdit={onOwnerEdit}

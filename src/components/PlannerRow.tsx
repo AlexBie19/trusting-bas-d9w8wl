@@ -15,6 +15,7 @@ interface PlannerRowProps {
   onCellMouseUp: () => void;
   onCellContextMenu: (event: React.MouseEvent<HTMLDivElement>, row: number, day: number, entryId?: string) => void;
   onTaskMove: (entryId: string, dayDelta: number, finalClientY: number) => void;
+  onTaskResizeEnd: (entryId: string, dayDelta: number) => void;
   onTaskContextMenu: (event: React.MouseEvent<HTMLDivElement>, entryId: string) => void;
   onDescriptionEdit: (entryId: string, newDescription: string) => void;
   onOwnerEdit: (entryId: string, newOwner: string) => void;
@@ -37,6 +38,7 @@ export const PlannerRow = ({
   onCellMouseUp,
   onCellContextMenu,
   onTaskMove,
+  onTaskResizeEnd,
   onTaskContextMenu,
   onDescriptionEdit,
   onOwnerEdit
@@ -175,6 +177,7 @@ export const PlannerRow = ({
           gridStart={days[0]}
           cellWidth={cellWidth}
           onMove={onTaskMove}
+          onResizeEnd={onTaskResizeEnd}
           onContextMenu={onTaskContextMenu}
           onDescriptionEdit={onDescriptionEdit}
         />

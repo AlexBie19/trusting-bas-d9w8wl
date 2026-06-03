@@ -9,16 +9,20 @@ interface TaskBarProps {
   gridStart: Date;
   cellWidth: number;
   onMove: (entryId: string, dayDelta: number, finalClientY: number) => void;
+  onResizeEnd: (entryId: string, dayDelta: number) => void;
   onContextMenu: (event: React.MouseEvent<HTMLDivElement>, entryId: string) => void;
   onDescriptionEdit: (entryId: string, newDescription: string) => void;
 }
 
-export const TaskBar = ({ entry, gridStart, cellWidth, onMove, onContextMenu, onDescriptionEdit }: TaskBarProps) => {
+export const TaskBar = ({ entry, gridStart, cellWidth, onMove, onResizeEnd, onContextMenu, onDescriptionEdit }: TaskBarProps) => {
   const [dragOffset, setDragOffset] = useState(0);
+  const [resizeOffset, setResizeOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
+  const [resizing, setResizing] = useState(false);
   const [editingDesc, setEditingDesc] = useState(false);
   const [descDraft, setDescDraft] = useState(entry.description);
   const dragOffsetRef = useRef(0);
+  const resizeOffsetRef = useRef(0);
   const startXRef = useRef(0);
   const startYRef = useRef(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -49,7 +53,7 @@ export const TaskBar = ({ entry, gridStart, cellWidth, onMove, onContextMenu, on
 
   const style: CSSProperties = {
     left: position.left + dragOffset,
-    width: position.width,
+    width: Math.max(cellWidth, position.width + resizeOffset),
     backgroundColor: typeColors[entry.type]
   };
 
@@ -97,6 +101,37 @@ export const TaskBar = ({ entry, gridStart, cellWidth, onMove, onContextMenu, on
     window.addEventListener("mouseup", onMouseUp);
   };
 
+  const onResizeMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.button !== 0 || editingDesc) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const startX = event.clientX;
+    setResizing(true);
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const dayDelta = Math.round((moveEvent.clientX - startX) / cellWidth);
+      const minOffset = cellWidth - position.width;
+      const nextOffset = Math.max(minOffset, dayDelta * cellWidth);
+      resizeOffsetRef.current = nextOffset;
+      setResizeOffset(nextOffset);
+    };
+
+    const onMouseUp = () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+      const dayDelta = Math.round(resizeOffsetRef.current / cellWidth);
+      if (dayDelta !== 0) {
+        onResizeEnd(entry.id, dayDelta);
+      }
+      resizeOffsetRef.current = 0;
+      setResizeOffset(0);
+      setResizing(false);
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+  };
+
   const onDoubleClick = (event: React.MouseEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.stopPropagation();
@@ -120,7 +155,7 @@ export const TaskBar = ({ entry, gridStart, cellWidth, onMove, onContextMenu, on
 
   return (
     <div
-      className={`task-bar status-${entry.status} ${dragging ? "dragging" : ""}`}
+      className={`task-bar status-${entry.status} ${dragging ? "dragging" : ""} ${resizing ? "resizing" : ""}`}
       style={style}
       onMouseDown={onMouseDown}
       onDoubleClick={onDoubleClick}
@@ -145,7 +180,15 @@ export const TaskBar = ({ entry, gridStart, cellWidth, onMove, onContextMenu, on
           placeholder="Beschreibung..."
         />
       ) : (
-        <span className="task-bar-label">{entry.title}</span>
+        <>
+          <span className="task-bar-label">{entry.title}</span>
+          <div
+            className="task-bar-resize-handle"
+            onMouseDown={onResizeMouseDown}
+            onClick={(event) => event.stopPropagation()}
+            title="Dauer verlängern oder verkürzen"
+          />
+        </>
       )}
     </div>
   );

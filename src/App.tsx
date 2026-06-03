@@ -16,6 +16,7 @@ import {
   moveEntryToStartDate,
   moveMultipleEntriesToStartDate,
   moveMultipleEntriesToUnscheduled,
+  resizeEntryEndByDays,
   sortEntries
 } from "./utils/planner";
 import "./styles.css";
@@ -448,6 +449,11 @@ function App() {
               current.map((entry) => (entry.id === entryId ? moveEntryByDays(entry, dayDelta) : entry))
             );
           }
+        }}
+        onTaskResizeEnd={(entryId, dayDelta) => {
+          setAllEntries((current) =>
+            current.map((entry) => (entry.id === entryId ? resizeEntryEndByDays(entry, dayDelta) : entry))
+          );
         }}
         onTaskContextMenu={(event, entryId) => {
           event.preventDefault();
