@@ -7,7 +7,7 @@ import { Legend } from "./components/Legend";
 import { PlannerGrid } from "./components/PlannerGrid";
 import { PrintView } from "./components/PrintView";
 import { Toolbar } from "./components/Toolbar";
-import { entries as fakeEntries, tractors } from "./data/fakeData";
+import { entries as fakeEntries, owners, tractors } from "./data/fakeData";
 import { PlannerEntry, PlannerFilters, SelectionRange, ZoomLevel } from "./types";
 import { getVisibleDays, toDayKey } from "./utils/dates";
 import {
@@ -59,6 +59,18 @@ function App() {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const gridRef = useRef<HTMLDivElement>(null);
+
+  // Resolve which tractor group element is at the given client Y coordinate
+  const getTractorIdAtClientY = useCallback((clientY: number): string | null => {
+    const groups = Array.from(document.querySelectorAll<HTMLElement>("[data-tractor-id]"));
+    for (const group of groups) {
+      const rect = group.getBoundingClientRect();
+      if (clientY >= rect.top && clientY <= rect.bottom) {
+        return group.getAttribute("data-tractor-id");
+      }
+    }
+    return null;
+  }, []);
 
   const days = useMemo(
     () => getVisibleDays(addWeeks(new Date(), weekOffset)),
@@ -276,6 +288,16 @@ function App() {
         });
       }
 
+      // If there's an active date selection, offer "create from selection" options too
+      if (selectedStartDay) {
+        actions.push(
+          { key: "sep", label: "──────────────────────────────", onClick: () => {} },
+          { key: "fromSelAction", label: "📐 Neue Aktion aus markiertem Bereich", onClick: () => openCreateDialog("Umbau", true, entry.tractorId, selectedTractorIds) },
+          { key: "fromSelEvent",  label: "📐 Neues Event aus markiertem Bereich",  onClick: () => openCreateDialog("Event", true, entry.tractorId, selectedTractorIds) },
+          { key: "fromSelTest",   label: "📐 Neuen Test aus markiertem Bereich",   onClick: () => openCreateDialog("Test",  true, entry.tractorId, selectedTractorIds) }
+        );
+      }
+
       return actions;
     }
 
@@ -372,6 +394,7 @@ function App() {
         selection={selection}
         isSelecting={isSelecting}
         collapsedTractorIds={collapsedTractorIds}
+        owners={owners}
         onToggleTractor={(tractorId) => {
           setCollapsedTractorIds((current) =>
             current.includes(tractorId)
@@ -407,10 +430,24 @@ function App() {
           }
           setContextMenu({ x: event.clientX, y: event.clientY, row, day, rowEntryId: entryId });
         }}
-        onTaskMove={(entryId, dayDelta) => {
-          setAllEntries((current) =>
-            current.map((entry) => (entry.id === entryId ? moveEntryByDays(entry, dayDelta) : entry))
-          );
+        onTaskMove={(entryId, dayDelta, finalClientY) => {
+          const targetTractorId = getTractorIdAtClientY(finalClientY);
+          const originalEntry = allEntries.find((e) => e.id === entryId);
+          if (targetTractorId && originalEntry && targetTractorId !== originalEntry.tractorId) {
+            // Different tractor → copy the entry to the target tractor with adjusted dates
+            const movedEntry = dayDelta !== 0 ? moveEntryByDays(originalEntry, dayDelta) : originalEntry;
+            const copiedEntry: PlannerEntry = {
+              ...movedEntry,
+              id: `copy-${Date.now()}`,
+              tractorId: targetTractorId
+            };
+            setAllEntries((current) => [...current, copiedEntry]);
+          } else if (dayDelta !== 0) {
+            // Same tractor → just move
+            setAllEntries((current) =>
+              current.map((entry) => (entry.id === entryId ? moveEntryByDays(entry, dayDelta) : entry))
+            );
+          }
         }}
         onTaskContextMenu={(event, entryId) => {
           event.preventDefault();
@@ -419,6 +456,11 @@ function App() {
         onDescriptionEdit={(entryId, newDescription) => {
           setAllEntries((current) =>
             current.map((entry) => (entry.id === entryId ? { ...entry, description: newDescription } : entry))
+          );
+        }}
+        onOwnerEdit={(entryId, newOwner) => {
+          setAllEntries((current) =>
+            current.map((entry) => (entry.id === entryId ? { ...entry, owner: newOwner } : entry))
           );
         }}
       />
@@ -435,6 +477,7 @@ function App() {
       <EditDrawer
         open={drawerOpen}
         tractors={tractors}
+        owners={owners}
         entry={editingEntry}
         onCancel={() => {
           setPendingCreateTractorIds(null);

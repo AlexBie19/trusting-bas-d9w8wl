@@ -9,13 +9,15 @@ interface PlannerRowProps {
   days: Date[];
   cellWidth: number;
   selection: SelectionRange | null;
+  owners: string[];
   onCellMouseDown: (row: number, day: number) => void;
   onCellMouseEnter: (row: number, day: number) => void;
   onCellMouseUp: () => void;
   onCellContextMenu: (event: React.MouseEvent<HTMLDivElement>, row: number, day: number, entryId?: string) => void;
-  onTaskMove: (entryId: string, dayDelta: number) => void;
+  onTaskMove: (entryId: string, dayDelta: number, finalClientY: number) => void;
   onTaskContextMenu: (event: React.MouseEvent<HTMLDivElement>, entryId: string) => void;
   onDescriptionEdit: (entryId: string, newDescription: string) => void;
+  onOwnerEdit: (entryId: string, newOwner: string) => void;
 }
 
 const isSelectedCell = (selection: SelectionRange | null, row: number, day: number) => {
@@ -29,18 +31,25 @@ export const PlannerRow = ({
   days,
   cellWidth,
   selection,
+  owners,
   onCellMouseDown,
   onCellMouseEnter,
   onCellMouseUp,
   onCellContextMenu,
   onTaskMove,
   onTaskContextMenu,
-  onDescriptionEdit
+  onDescriptionEdit,
+  onOwnerEdit
 }: PlannerRowProps) => {
   const [editingDesc, setEditingDesc] = useState(false);
   const [descDraft, setDescDraft] = useState(entry.description);
   const inputRef = useRef<HTMLInputElement>(null);
   const cancelledRef = useRef(false);
+
+  const [editingOwner, setEditingOwner] = useState(false);
+  const [ownerDraft, setOwnerDraft] = useState(entry.owner);
+  const ownerInputRef = useRef<HTMLInputElement>(null);
+  const ownerCancelledRef = useRef(false);
 
   const startDescEdit = () => {
     cancelledRef.current = false;
@@ -59,6 +68,25 @@ export const PlannerRow = ({
     cancelledRef.current = true;
     setDescDraft(entry.description);
     setEditingDesc(false);
+  };
+
+  const startOwnerEdit = () => {
+    ownerCancelledRef.current = false;
+    setOwnerDraft(entry.owner);
+    setEditingOwner(true);
+    setTimeout(() => ownerInputRef.current?.focus(), 0);
+  };
+
+  const saveOwnerEdit = () => {
+    if (ownerCancelledRef.current) return;
+    onOwnerEdit(entry.id, ownerDraft);
+    setEditingOwner(false);
+  };
+
+  const cancelOwnerEdit = () => {
+    ownerCancelledRef.current = true;
+    setOwnerDraft(entry.owner);
+    setEditingOwner(false);
   };
 
   return (
@@ -92,8 +120,35 @@ export const PlannerRow = ({
         )}
       </div>
 
-      {/* Owner */}
-      <div className="left-cell col-owner">{entry.owner || "—"}</div>
+      {/* Owner – inline editable on double-click */}
+      <div
+        className="left-cell col-owner"
+        title={editingOwner ? undefined : (entry.owner || "Zuständige Person doppelklicken")}
+        onDoubleClick={startOwnerEdit}
+      >
+        {editingOwner ? (
+          <>
+            <input
+              ref={ownerInputRef}
+              list={`owners-list-${entry.id}`}
+              className="inline-edit-input"
+              value={ownerDraft}
+              onChange={(e) => setOwnerDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); saveOwnerEdit(); }
+                if (e.key === "Escape") { e.preventDefault(); cancelOwnerEdit(); }
+              }}
+              onBlur={saveOwnerEdit}
+              placeholder="Name eingeben..."
+            />
+            <datalist id={`owners-list-${entry.id}`}>
+              {owners.map((o) => <option key={o} value={o} />)}
+            </datalist>
+          </>
+        ) : (
+          <span className="owner-text">{entry.owner || "—"}</span>
+        )}
+      </div>
 
       {/* Timeline cells */}
       <div className="timeline-row" style={{ width: days.length * cellWidth }}>

@@ -8,7 +8,7 @@ interface TaskBarProps {
   entry: PlannerEntry;
   gridStart: Date;
   cellWidth: number;
-  onMove: (entryId: string, dayDelta: number) => void;
+  onMove: (entryId: string, dayDelta: number, finalClientY: number) => void;
   onContextMenu: (event: React.MouseEvent<HTMLDivElement>, entryId: string) => void;
   onDescriptionEdit: (entryId: string, newDescription: string) => void;
 }
@@ -74,13 +74,11 @@ export const TaskBar = ({ entry, gridStart, cellWidth, onMove, onContextMenu, on
       setDragOffset(offset);
     };
 
-    const onMouseUp = () => {
+    const onMouseUp = (upEvent: MouseEvent) => {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
       const dayDelta = Math.round(dragOffsetRef.current / cellWidth);
-      if (dayDelta !== 0) {
-        onMove(entry.id, dayDelta);
-      }
+      onMove(entry.id, dayDelta, upEvent.clientY);
       dragOffsetRef.current = 0;
       setDragOffset(0);
       setDragging(false);
