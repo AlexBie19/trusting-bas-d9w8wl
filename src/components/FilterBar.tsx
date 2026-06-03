@@ -16,6 +16,13 @@ export const FilterBar = ({ filters, entries, tractors, onChange, onReset }: Fil
 
   return (
     <div className="filter-bar">
+      <input
+        type="text"
+        value={filters.search}
+        onChange={(event) => onChange({ ...filters, search: event.target.value })}
+        placeholder="Suche in allen Daten..."
+      />
+
       <select value={filters.type} onChange={(event) => onChange({ ...filters, type: event.target.value })}>
         <option value="">Alle Typen</option>
         {types.map((type) => (

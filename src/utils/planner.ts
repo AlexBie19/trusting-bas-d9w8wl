@@ -25,15 +25,15 @@ export const sortEntries = (entries: PlannerEntry[]) => {
     const tractorDiff = a.tractorId.localeCompare(b.tractorId);
     if (tractorDiff !== 0) return tractorDiff;
 
-    const statusDiff = (statusRank[a.status] ?? 99) - (statusRank[b.status] ?? 99);
-    if (statusDiff !== 0) return statusDiff;
+    const groupDiff = (typeRank[a.type] ?? 99) - (typeRank[b.type] ?? 99);
+    if (groupDiff !== 0) return groupDiff;
 
     const aStart = a.startDate ?? "9999-12-31";
     const bStart = b.startDate ?? "9999-12-31";
     if (aStart !== bStart) return aStart.localeCompare(bStart);
 
-    const groupDiff = (typeRank[a.type] ?? 99) - (typeRank[b.type] ?? 99);
-    if (groupDiff !== 0) return groupDiff;
+    const statusDiff = (statusRank[a.status] ?? 99) - (statusRank[b.status] ?? 99);
+    if (statusDiff !== 0) return statusDiff;
 
     return a.title.localeCompare(b.title);
   });
@@ -43,12 +43,15 @@ export const filterEntries = (
   entries: PlannerEntry[],
   filters: PlannerFilters,
   showHistory: boolean,
+  visibleStart: Date,
+  visibleEnd: Date,
   referenceDate = new Date()
 ) => {
-  const { start } = getVisibleRange(referenceDate);
+  const { start: todayWindowStart } = getVisibleRange(referenceDate);
+  const searchQuery = filters.search.trim().toLowerCase();
 
   return entries.filter((entry) => {
-    if (!showHistory && entry.startDate && fromDayKey(entry.startDate) < start) {
+    if (!showHistory && entry.startDate && fromDayKey(entry.startDate) < todayWindowStart) {
       return false;
     }
 
@@ -56,6 +59,30 @@ export const filterEntries = (
     if (filters.owner && entry.owner !== filters.owner) return false;
     if (filters.status && entry.status !== filters.status) return false;
     if (filters.tractorId && entry.tractorId !== filters.tractorId) return false;
+
+    if (searchQuery) {
+      const haystack = [
+        entry.type,
+        entry.title,
+        entry.description,
+        entry.owner,
+        entry.status,
+        entry.tractorId,
+        entry.startDate ?? "",
+        entry.endDate ?? ""
+      ]
+        .join(" ")
+        .toLowerCase();
+      if (!haystack.includes(searchQuery)) return false;
+    }
+
+    if (showHistory && entry.startDate && entry.endDate) {
+      const start = fromDayKey(entry.startDate);
+      const end = fromDayKey(entry.endDate);
+      if (end < visibleStart || start > visibleEnd) {
+        return false;
+      }
+    }
 
     return true;
   });
@@ -107,5 +134,20 @@ export const moveMultipleEntriesToStartDate = (
   return allEntries.map((entry) => {
     if (!entryIds.includes(entry.id)) return entry;
     return moveEntryToStartDate(entry, newStartDay);
+  });
+};
+
+export const moveMultipleEntriesToUnscheduled = (
+  allEntries: PlannerEntry[],
+  entryIds: string[]
+): PlannerEntry[] => {
+  return allEntries.map((entry) => {
+    if (!entryIds.includes(entry.id)) return entry;
+    return {
+      ...entry,
+      startDate: null,
+      endDate: null,
+      status: "unscheduled"
+    };
   });
 };
