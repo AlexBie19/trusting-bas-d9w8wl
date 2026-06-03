@@ -13,6 +13,7 @@ export type EntryStatus = "planned" | "draft" | "confirmed" | "unscheduled";
 
 export interface Tractor {
   id: string;
+  serialNumber: string;
   name: string;
 }
 

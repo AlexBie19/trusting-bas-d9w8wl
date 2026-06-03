@@ -8,12 +8,15 @@ interface PlannerGridProps {
   days: Date[];
   cellWidth: number;
   selection: SelectionRange | null;
+  isSelecting: boolean;
   onCellMouseDown: (row: number, day: number) => void;
   onCellMouseEnter: (row: number, day: number) => void;
   onCellMouseUp: () => void;
-  onCellContextMenu: (event: React.MouseEvent<HTMLDivElement>, row: number, day: number) => void;
+  onCellContextMenu: (event: React.MouseEvent<HTMLDivElement>, row: number, day: number, entryId?: string) => void;
   onTaskMove: (entryId: string, dayDelta: number) => void;
   onTaskContextMenu: (event: React.MouseEvent<HTMLDivElement>, entryId: string) => void;
+  onDescriptionEdit: (entryId: string, newDescription: string) => void;
+  gridRef?: React.RefObject<HTMLDivElement>;
 }
 
 export const PlannerGrid = ({
@@ -22,29 +25,55 @@ export const PlannerGrid = ({
   days,
   cellWidth,
   selection,
+  isSelecting,
   onCellMouseDown,
   onCellMouseEnter,
   onCellMouseUp,
   onCellContextMenu,
   onTaskMove,
-  onTaskContextMenu
+  onTaskContextMenu,
+  onDescriptionEdit,
+  gridRef
 }: PlannerGridProps) => {
   const tractorMap = new Map(tractors.map((tractor) => [tractor.id, tractor]));
   const today = new Date();
 
+  // Group entries by tractorId, maintaining the tractor order from the tractors array
+  const groups = tractors
+    .map((tractor) => ({
+      tractor,
+      entries: entries.filter((e) => e.tractorId === tractor.id)
+    }))
+    .filter((group) => group.entries.length > 0);
+
+  // Build a flat row index map (only task rows count for selection)
+  let rowCounter = 0;
+  const rowMap: Array<{ entry: PlannerEntry; rowIndex: number }> = [];
+  groups.forEach(({ entries: groupEntries }) => {
+    groupEntries.forEach((entry) => {
+      rowMap.push({ entry, rowIndex: rowCounter });
+      rowCounter++;
+    });
+  });
+
   return (
-    <div className="planner-grid">
+    <div className={`planner-grid${isSelecting ? " is-selecting" : ""}`} ref={gridRef}>
+      {/* Header */}
       <div className="planner-header">
-        <div className="left-header">Schlepper</div>
-        <div className="left-header">Beschreibung</div>
-        <div className="left-header">Zuständige Person</div>
+        <div className="left-header col-task">Seriennummer / Schlepper / Task</div>
+        <div className="left-header col-desc">Beschreibung</div>
+        <div className="left-header col-owner">Zuständig</div>
         <div className="timeline-header" style={{ width: days.length * cellWidth }}>
           {days.map((day) => {
             const isToday = isSameDay(day, today);
             const weekend = day.getDay() === 0 || day.getDay() === 6;
 
             return (
-              <div key={day.toISOString()} style={{ width: cellWidth }} className={`day-header ${weekend ? "weekend" : ""} ${isToday ? "today" : ""}`}>
+              <div
+                key={day.toISOString()}
+                style={{ width: cellWidth }}
+                className={`day-header ${weekend ? "weekend" : ""} ${isToday ? "today" : ""}`}
+              >
                 <div>{format(day, "EEE")}</div>
                 <strong>{format(day, "dd.MM")}</strong>
               </div>
@@ -53,23 +82,54 @@ export const PlannerGrid = ({
         </div>
       </div>
 
+      {/* Body: grouped by tractor */}
       <div className="planner-body">
-        {entries.map((entry, index) => (
-          <PlannerRow
-            key={entry.id}
-            rowIndex={index}
-            entry={entry}
-            tractor={tractorMap.get(entry.tractorId)}
-            days={days}
-            cellWidth={cellWidth}
-            selection={selection}
-            onCellMouseDown={onCellMouseDown}
-            onCellMouseEnter={onCellMouseEnter}
-            onCellMouseUp={onCellMouseUp}
-            onCellContextMenu={onCellContextMenu}
-            onTaskMove={onTaskMove}
-            onTaskContextMenu={onTaskContextMenu}
-          />
+        {groups.map(({ tractor, entries: groupEntries }) => (
+          <div key={tractor.id} className="planner-group">
+            {/* Group header: Seriennummer + Schlepper name */}
+            <div className="planner-group-header">
+              <div className="group-left">
+                <span className="group-serial">{tractor.serialNumber}</span>
+                <span className="group-separator"> · </span>
+                <span className="group-tractor">{tractor.name}</span>
+              </div>
+              <div className="group-timeline" style={{ width: days.length * cellWidth }}>
+                {days.map((day) => {
+                  const weekend = day.getDay() === 0 || day.getDay() === 6;
+                  return (
+                    <div
+                      key={day.toISOString()}
+                      className={`day-cell group-day-cell ${weekend ? "weekend" : ""}`}
+                      style={{ width: cellWidth }}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Task rows */}
+            {groupEntries.map((entry) => {
+              const rowData = rowMap.find((r) => r.entry.id === entry.id);
+              const rowIndex = rowData?.rowIndex ?? 0;
+              return (
+                <PlannerRow
+                  key={entry.id}
+                  rowIndex={rowIndex}
+                  entry={entry}
+                  days={days}
+                  cellWidth={cellWidth}
+                  selection={selection}
+                  onCellMouseDown={onCellMouseDown}
+                  onCellMouseEnter={onCellMouseEnter}
+                  onCellMouseUp={onCellMouseUp}
+                  onCellContextMenu={onCellContextMenu}
+                  onTaskMove={onTaskMove}
+                  onTaskContextMenu={onTaskContextMenu}
+                  onDescriptionEdit={onDescriptionEdit}
+                />
+              );
+            })}
+          </div>
         ))}
       </div>
     </div>

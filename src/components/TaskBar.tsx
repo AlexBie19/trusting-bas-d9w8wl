@@ -10,12 +10,17 @@ interface TaskBarProps {
   cellWidth: number;
   onMove: (entryId: string, dayDelta: number) => void;
   onContextMenu: (event: React.MouseEvent<HTMLDivElement>, entryId: string) => void;
+  onDescriptionEdit: (entryId: string, newDescription: string) => void;
 }
 
-export const TaskBar = ({ entry, gridStart, cellWidth, onMove, onContextMenu }: TaskBarProps) => {
+export const TaskBar = ({ entry, gridStart, cellWidth, onMove, onContextMenu, onDescriptionEdit }: TaskBarProps) => {
   const [dragOffset, setDragOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
+  const [editingDesc, setEditingDesc] = useState(false);
+  const [descDraft, setDescDraft] = useState(entry.description);
   const dragOffsetRef = useRef(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const cancelledRef = useRef(false);
 
   const position = useMemo(() => {
     if (!entry.startDate || !entry.endDate) return null;
@@ -29,7 +34,15 @@ export const TaskBar = ({ entry, gridStart, cellWidth, onMove, onContextMenu }: 
   }, [entry.startDate, entry.endDate, gridStart, cellWidth]);
 
   if (!position) {
-    return <div className="unscheduled-pill" onContextMenu={(event) => onContextMenu(event, entry.id)}>Unbestimmt</div>;
+    return (
+      <div
+        className="unscheduled-pill"
+        onContextMenu={(event) => onContextMenu(event, entry.id)}
+        title={`${entry.title} – Unscheduled`}
+      >
+        {entry.type}: {entry.title}
+      </div>
+    );
   }
 
   const style: CSSProperties = {
@@ -48,7 +61,10 @@ export const TaskBar = ({ entry, gridStart, cellWidth, onMove, onContextMenu }: 
 
   const onMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
+    // Suppress drag when the inline description editor is open
+    if (editingDesc) return;
     event.preventDefault();
+    event.stopPropagation();
     const startX = event.clientX;
     setDragging(true);
 
@@ -74,15 +90,56 @@ export const TaskBar = ({ entry, gridStart, cellWidth, onMove, onContextMenu }: 
     window.addEventListener("mouseup", onMouseUp);
   };
 
+  const onDoubleClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    cancelledRef.current = false;
+    setDescDraft(entry.description);
+    setEditingDesc(true);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const saveDescEdit = () => {
+    if (cancelledRef.current) return;
+    onDescriptionEdit(entry.id, descDraft);
+    setEditingDesc(false);
+  };
+
+  const cancelDescEdit = () => {
+    cancelledRef.current = true;
+    setDescDraft(entry.description);
+    setEditingDesc(false);
+  };
+
   return (
     <div
       className={`task-bar status-${entry.status} ${dragging ? "dragging" : ""}`}
       style={style}
       onMouseDown={onMouseDown}
-      onContextMenu={(event) => onContextMenu(event, entry.id)}
-      title={`${entry.title} (${entry.startDate} - ${entry.endDate})`}
+      onDoubleClick={onDoubleClick}
+      onContextMenu={(event) => {
+        event.stopPropagation();
+        onContextMenu(event, entry.id);
+      }}
+      title={`${entry.title}\n${entry.description}\n${entry.startDate} – ${entry.endDate}\nStatus: ${entry.status}\nZuständig: ${entry.owner}`}
     >
-      {entry.title}
+      {editingDesc ? (
+        <input
+          ref={inputRef}
+          className="task-bar-inline-input"
+          value={descDraft}
+          onChange={(e) => setDescDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") { e.preventDefault(); saveDescEdit(); }
+            if (e.key === "Escape") { e.preventDefault(); cancelDescEdit(); }
+          }}
+          onBlur={saveDescEdit}
+          onClick={(e) => e.stopPropagation()}
+          placeholder="Beschreibung..."
+        />
+      ) : (
+        <span className="task-bar-label">{entry.title}</span>
+      )}
     </div>
   );
 };

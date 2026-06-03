@@ -6,7 +6,7 @@ interface PrintViewProps {
 }
 
 export const PrintView = ({ entries, tractors }: PrintViewProps) => {
-  const tractorMap = new Map(tractors.map((tractor) => [tractor.id, tractor.name]));
+  const tractorMap = new Map(tractors.map((tractor) => [tractor.id, tractor]));
 
   return (
     <div className="print-view">
@@ -14,9 +14,10 @@ export const PrintView = ({ entries, tractors }: PrintViewProps) => {
       <table>
         <thead>
           <tr>
+            <th>Seriennummer</th>
             <th>Schlepper</th>
             <th>Typ</th>
-            <th>Titel</th>
+            <th>Task</th>
             <th>Beschreibung</th>
             <th>Zuständig</th>
             <th>Start</th>
@@ -25,18 +26,22 @@ export const PrintView = ({ entries, tractors }: PrintViewProps) => {
           </tr>
         </thead>
         <tbody>
-          {entries.map((entry) => (
-            <tr key={entry.id}>
-              <td>{tractorMap.get(entry.tractorId)}</td>
-              <td>{entry.type}</td>
-              <td>{entry.title}</td>
-              <td>{entry.description}</td>
-              <td>{entry.owner}</td>
-              <td>{entry.startDate ?? "-"}</td>
-              <td>{entry.endDate ?? "-"}</td>
-              <td>{entry.status}</td>
-            </tr>
-          ))}
+          {entries.map((entry) => {
+            const tractor = tractorMap.get(entry.tractorId);
+            return (
+              <tr key={entry.id}>
+                <td>{tractor?.serialNumber ?? "-"}</td>
+                <td>{tractor?.name ?? "-"}</td>
+                <td>{entry.type}</td>
+                <td>{entry.title}</td>
+                <td>{entry.description}</td>
+                <td>{entry.owner}</td>
+                <td>{entry.startDate ?? "-"}</td>
+                <td>{entry.endDate ?? "-"}</td>
+                <td>{entry.status}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
