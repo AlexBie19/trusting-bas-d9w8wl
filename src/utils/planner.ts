@@ -25,12 +25,12 @@ export const sortEntries = (entries: PlannerEntry[]) => {
     const tractorDiff = a.tractorId.localeCompare(b.tractorId);
     if (tractorDiff !== 0) return tractorDiff;
 
-    const groupDiff = (typeRank[a.type] ?? 99) - (typeRank[b.type] ?? 99);
-    if (groupDiff !== 0) return groupDiff;
-
     const aStart = a.startDate ?? "9999-12-31";
     const bStart = b.startDate ?? "9999-12-31";
     if (aStart !== bStart) return aStart.localeCompare(bStart);
+
+    const groupDiff = (typeRank[a.type] ?? 99) - (typeRank[b.type] ?? 99);
+    if (groupDiff !== 0) return groupDiff;
 
     const statusDiff = (statusRank[a.status] ?? 99) - (statusRank[b.status] ?? 99);
     if (statusDiff !== 0) return statusDiff;
@@ -105,6 +105,23 @@ export const moveEntryByDays = (entry: PlannerEntry, dayDelta: number): PlannerE
     ...entry,
     startDate: toDayKey(newStart),
     endDate: toDayKey(newEnd),
+    status: entry.status === "unscheduled" ? "planned" : entry.status
+  };
+};
+
+export const resizeEntryEndByDays = (entry: PlannerEntry, dayDelta: number): PlannerEntry => {
+  if (!entry.startDate || !entry.endDate || dayDelta === 0) {
+    return entry;
+  }
+
+  const start = fromDayKey(entry.startDate);
+  const currentEnd = fromDayKey(entry.endDate);
+  const nextEnd = addDays(currentEnd, dayDelta);
+  const clampedEnd = nextEnd < start ? start : nextEnd;
+
+  return {
+    ...entry,
+    endDate: toDayKey(clampedEnd),
     status: entry.status === "unscheduled" ? "planned" : entry.status
   };
 };

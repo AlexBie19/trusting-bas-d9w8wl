@@ -5,6 +5,7 @@ import { EntryStatus, EntryType, PlannerEntry, Tractor } from "../types";
 interface EditDrawerProps {
   open: boolean;
   tractors: Tractor[];
+  owners: string[];
   entry: PlannerEntry | null;
   onCancel: () => void;
   onSave: (entry: PlannerEntry) => void;
@@ -25,7 +26,7 @@ const createEmptyEntry = (): PlannerEntry => ({
   status: "planned"
 });
 
-export const EditDrawer = ({ open, tractors, entry, onCancel, onSave }: EditDrawerProps) => {
+export const EditDrawer = ({ open, tractors, owners, entry, onCancel, onSave }: EditDrawerProps) => {
   const [draft, setDraft] = useState<PlannerEntry>(entry ?? createEmptyEntry());
 
   useEffect(() => {
@@ -61,7 +62,17 @@ export const EditDrawer = ({ open, tractors, entry, onCancel, onSave }: EditDraw
           <input value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} />
 
           <label>Verantwortliche Person</label>
-          <input value={draft.owner} onChange={(event) => setDraft({ ...draft, owner: event.target.value })} />
+          <div>
+            <input
+              list="drawer-owners-list"
+              value={draft.owner}
+              onChange={(event) => setDraft({ ...draft, owner: event.target.value })}
+              placeholder="Name eingeben oder auswählen..."
+            />
+            <datalist id="drawer-owners-list">
+              {owners.map((o) => <option key={o} value={o} />)}
+            </datalist>
+          </div>
 
           <label>Startdatum</label>
           <input

@@ -1,4 +1,4 @@
-import { format, isSameDay } from "date-fns";
+import { format, getISOWeek, isSameDay } from "date-fns";
 import { PlannerEntry, SelectionRange, Tractor } from "../types";
 import { PlannerRow } from "./PlannerRow";
 
@@ -10,14 +10,17 @@ interface PlannerGridProps {
   selection: SelectionRange | null;
   isSelecting: boolean;
   collapsedTractorIds: string[];
+  owners: string[];
   onToggleTractor: (tractorId: string) => void;
   onCellMouseDown: (row: number, day: number) => void;
   onCellMouseEnter: (row: number, day: number) => void;
   onCellMouseUp: () => void;
   onCellContextMenu: (event: React.MouseEvent<HTMLDivElement>, row: number, day: number, entryId?: string) => void;
-  onTaskMove: (entryId: string, dayDelta: number) => void;
+  onTaskMove: (entryId: string, dayDelta: number, finalClientY: number) => void;
+  onTaskResizeEnd: (entryId: string, dayDelta: number) => void;
   onTaskContextMenu: (event: React.MouseEvent<HTMLDivElement>, entryId: string) => void;
   onDescriptionEdit: (entryId: string, newDescription: string) => void;
+  onOwnerEdit: (entryId: string, newOwner: string) => void;
   gridRef?: React.RefObject<HTMLDivElement>;
 }
 
@@ -29,14 +32,17 @@ export const PlannerGrid = ({
   selection,
   isSelecting,
   collapsedTractorIds,
+  owners,
   onToggleTractor,
   onCellMouseDown,
   onCellMouseEnter,
   onCellMouseUp,
   onCellContextMenu,
   onTaskMove,
+  onTaskResizeEnd,
   onTaskContextMenu,
   onDescriptionEdit,
+  onOwnerEdit,
   gridRef
 }: PlannerGridProps) => {
   const today = new Date();
@@ -61,6 +67,19 @@ export const PlannerGrid = ({
     });
   });
 
+  // Build week groups for the KW header row
+  const weekGroups: { weekNum: number; year: number; count: number }[] = [];
+  days.forEach((day) => {
+    const weekNum = getISOWeek(day);
+    const year = day.getFullYear();
+    const last = weekGroups[weekGroups.length - 1];
+    if (!last || last.weekNum !== weekNum || last.year !== year) {
+      weekGroups.push({ weekNum, year, count: 1 });
+    } else {
+      last.count++;
+    }
+  });
+
   return (
     <div className={`planner-grid${isSelecting ? " is-selecting" : ""}`} ref={gridRef}>
       {/* Header */}
@@ -68,29 +87,44 @@ export const PlannerGrid = ({
         <div className="left-header col-task">Seriennummer / Schlepper / Task</div>
         <div className="left-header col-desc">Beschreibung</div>
         <div className="left-header col-owner">Zuständig</div>
-        <div className="timeline-header" style={{ width: days.length * cellWidth }}>
-          {days.map((day) => {
-            const isToday = isSameDay(day, today);
-            const weekend = day.getDay() === 0 || day.getDay() === 6;
-
-            return (
+        <div className="timeline-header-wrap" style={{ width: days.length * cellWidth }}>
+          {/* Calendar week row */}
+          <div className="kw-header-row">
+            {weekGroups.map(({ weekNum, year, count }) => (
               <div
-                key={day.toISOString()}
-                style={{ width: cellWidth }}
-                className={`day-header ${weekend ? "weekend" : ""} ${isToday ? "today" : ""}`}
+                key={`${year}-${weekNum}`}
+                className="kw-header-cell"
+                style={{ width: count * cellWidth }}
               >
-                <div>{format(day, "EEE")}</div>
-                <strong>{format(day, "dd.MM")}</strong>
+                KW {weekNum}
               </div>
-            );
-          })}
+            ))}
+          </div>
+          {/* Day header row */}
+          <div className="timeline-header" style={{ width: days.length * cellWidth }}>
+            {days.map((day) => {
+              const isToday = isSameDay(day, today);
+              const weekend = day.getDay() === 0 || day.getDay() === 6;
+
+              return (
+                <div
+                  key={day.toISOString()}
+                  style={{ width: cellWidth }}
+                  className={`day-header ${weekend ? "weekend" : ""} ${isToday ? "today" : ""}`}
+                >
+                  <div>{format(day, "EEE")}</div>
+                  <strong>{format(day, "dd.MM")}</strong>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
       {/* Body: grouped by tractor */}
       <div className="planner-body">
         {groups.map(({ tractor, entries: groupEntries }) => (
-          <div key={tractor.id} className="planner-group">
+          <div key={tractor.id} className="planner-group" data-tractor-id={tractor.id}>
             {/* Group header: Seriennummer + Schlepper name */}
             <div className="planner-group-header">
               <div className="group-left">
@@ -133,13 +167,16 @@ export const PlannerGrid = ({
                     days={days}
                     cellWidth={cellWidth}
                     selection={selection}
+                    owners={owners}
                     onCellMouseDown={onCellMouseDown}
                     onCellMouseEnter={onCellMouseEnter}
                     onCellMouseUp={onCellMouseUp}
                     onCellContextMenu={onCellContextMenu}
                     onTaskMove={onTaskMove}
+                    onTaskResizeEnd={onTaskResizeEnd}
                     onTaskContextMenu={onTaskContextMenu}
                     onDescriptionEdit={onDescriptionEdit}
+                    onOwnerEdit={onOwnerEdit}
                   />
                 );
               })}

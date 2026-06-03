@@ -112,6 +112,34 @@ button {
   background: #eef2fb;
 }
 
+/* Calendar week + day headers wrapper */
+.timeline-header-wrap {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Calendar week (KW) row */
+.kw-header-row {
+  display: flex;
+  background: #dde5f7;
+  border-bottom: 1px solid var(--border);
+}
+
+.kw-header-cell {
+  flex-shrink: 0;
+  border-right: 1px solid var(--group-border);
+  padding: 2px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #1a3a6e;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
 /* Task row */
 .planner-row {
   display: grid;
@@ -277,6 +305,14 @@ button {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: default;
+}
+
+.owner-text {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Inline edit input (in left description cell) */
@@ -338,6 +374,7 @@ button {
   display: flex;
   align-items: center;
   gap: 4px;
+  padding-right: 16px;
 }
 
 .task-bar:hover {
@@ -351,6 +388,11 @@ button {
   z-index: 5;
 }
 
+.task-bar.resizing {
+  cursor: ew-resize;
+  z-index: 5;
+}
+
 .task-bar.status-unscheduled {
   border-style: dashed;
 }
@@ -359,6 +401,31 @@ button {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
+}
+
+.task-bar-resize-handle {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 10px;
+  height: calc(100% + 2px);
+  border-left: 1px solid rgba(0, 0, 0, 0.18);
+  border-radius: 0 5px 5px 0;
+  cursor: ew-resize;
+}
+
+.task-bar-resize-handle::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 3px;
+  width: 2px;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.4);
+  transform: translateY(-50%);
+  box-shadow: -3px 0 0 rgba(0, 0, 0, 0.4);
 }
 
 /* Inline input inside task bar */
@@ -421,6 +488,12 @@ button {
 
 .context-menu button:hover {
   background: #f4f7ff;
+}
+
+.context-menu-separator {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 6px;
 }
 
 /* ---- Edit drawer ---- */
