@@ -259,6 +259,8 @@ button {
   text-transform: uppercase;
   letter-spacing: 0.03em;
   line-height: 1.4;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 /* Color the badge based on type */
@@ -388,6 +390,8 @@ button {
   align-items: center;
   gap: 4px;
   padding-right: 16px;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 .task-bar:hover {

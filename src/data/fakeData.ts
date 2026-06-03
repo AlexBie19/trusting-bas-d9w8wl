@@ -61,3 +61,13 @@ export const typeColors: Record<string, string> = {
   Event: "#8f5ad9",
   Test: "#19b8d8"
 };
+
+export const typeBadgeColors: Record<string, { background: string; color: string }> = {
+  Leihvertrag: { background: "#dbeafe", color: "#1e40af" },
+  Felderprobung: { background: "#d1fae5", color: "#065f46" },
+  Umbau: { background: "#fed7aa", color: "#92400e" },
+  Prüfstand: { background: "#fee2e2", color: "#991b1b" },
+  Reparatur: { background: "#fef9c3", color: "#854d0e" },
+  Event: { background: "#ede9fe", color: "#5b21b6" },
+  Test: { background: "#cffafe", color: "#164e63" }
+};
